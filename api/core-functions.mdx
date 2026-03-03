@@ -1,0 +1,141 @@
+---
+title: 'Core Functions'
+description: 'Main functions for Twitter personality classification'
+---
+
+## classify_user()
+
+The primary function that classifies a Twitter user's personality type using the Myers-Briggs Type Indicator (MBTI).
+
+<ParamField path="username" type="string" required>
+  Twitter username (handle) to analyze. Do not include the '@' symbol.
+</ParamField>
+
+<ResponseField name="username" type="string">
+  The Twitter username that was analyzed
+</ResponseField>
+
+<ResponseField name="mbti" type="string">
+  The 4-letter Myers-Briggs personality type (e.g., "ENFJ", "ISTJ", "INFP")
+</ResponseField>
+
+<ResponseField name="personality" type="dict">
+  Dictionary containing personality details with two keys:
+  - `type`: Human-readable personality name (e.g., "The Giver", "The Inspector")
+  - `statement`: Detailed description of the personality type
+</ResponseField>
+
+### How It Works
+
+1. Fetches recent tweets using `getTweets()`
+2. Preprocesses tweet text using NLP techniques
+3. Vectorizes tweets using TF-IDF with pre-trained vocabulary
+4. Runs predictions through 4 Naive Bayes models (IE, SN, TF, PJ)
+5. Determines most common prediction for each dimension
+6. Combines results into 4-letter MBTI type
+7. Returns username, MBTI code, and personality description
+
+### Usage Example
+
+```python
+from predict import classify_user
+
+# Analyze a Twitter user
+username, mbti, personality = classify_user("amanthe001")
+
+print(f"User Name: {username}")
+print(f"MBTI Type: {mbti}")
+print(f"Personality: {personality['type']}")
+print(f"Description: {personality['statement']}")
+```
+
+### Source Location
+
+Defined in `predict.py:132`
+
+---
+
+## getTweets()
+
+Fetches up to 4,000 recent tweets from a specified Twitter user and saves them to a CSV file after preprocessing.
+
+<ParamField path="user" type="string" required>
+  Twitter screen name (username) to fetch tweets from
+</ParamField>
+
+### Behavior
+
+- Retrieves up to 1,000 tweets per page across 4 pages (max 4,000 tweets)
+- Includes retweets in the results
+- Preprocesses each tweet using `preproc()` function
+- Replaces single-word tweets with "blank"
+- Writes preprocessed tweets to `user.csv`
+- Handles `TweepError` exceptions gracefully and continues execution
+
+### Usage Example
+
+```python
+from predict import getTweets
+
+# Fetch tweets from a user
+getTweets("elonmusk")
+
+# Tweets are saved to user.csv
+```
+
+### Technical Details
+
+- Uses Tweepy API with OAuth authentication
+- Pagination: 4 pages of 1,000 tweets each
+- Output format: CSV file with preprocessed tweet text
+- Error handling: Catches authentication and rate limit errors
+
+### Source Location
+
+Defined in `predict.py:116`
+
+---
+
+## Flask Web Route
+
+### POST /
+
+Web endpoint for personality classification via HTTP request.
+
+<ParamField body="userid" type="string" required>
+  Twitter username submitted via HTML form
+</ParamField>
+
+<ResponseField name="response" type="HTML">
+  Renders `analysis.html` template with classification results:
+  - `display`: Boolean indicating if results should be shown
+  - `name`: Twitter username analyzed
+  - `mbti`: 4-letter MBTI type
+  - `personality`: Dictionary with type and statement
+</ResponseField>
+
+### Usage Example
+
+```python
+from flask import Flask
+from predict import classify_user
+
+app = Flask(__name__)
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    if request.method == 'POST':
+        uid = request.form.get("userid")
+        name, mbti, personality = classify_user(uid)
+        return render_template('analysis.html', 
+                             display=True, 
+                             name=name, 
+                             mbti=mbti, 
+                             personality=personality)
+    
+    return render_template('analysis.html', display=False)
+```
+
+### Source Location
+
+Defined in `application.py:6`

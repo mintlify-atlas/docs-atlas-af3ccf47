@@ -1,80 +1,177 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick start
+description: Set up TwiP and get your first personality analysis in minutes
 ---
 
-## Get started in three steps
+## Installation
 
-Get your documentation site running locally and make your first customization.
+Get TwiP running locally in three steps:
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Clone the repository">
+    Download the TwiP source code from GitHub:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```bash
+    git clone https://github.com/anirudhtulasi/TwiP.git
+    cd TwiP
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    Install all required Python packages using pip:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    ```bash
+    pip install -r requirements.txt
+    ```
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    This installs Flask, Tweepy, scikit-learn, NLTK, pandas, and other dependencies.
+  </Step>
+  
+  <Step title="Configure Twitter API credentials">
+    Open `predict.py` and add your Twitter API credentials:
+    
+    ```python predict.py
+    ckey = 'YOUR_CONSUMER_KEY'
+    csecret = 'YOUR_CONSUMER_SECRET'
+    atoken = 'YOUR_ACCESS_TOKEN'
+    asecret = 'YOUR_ACCESS_SECRET'
+    ```
+    
+    Get credentials by creating a Twitter Developer account at [developer.twitter.com](https://developer.twitter.com).
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Run the application
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+Start the Flask development server:
 
-### Step 3: Go live
+<CodeGroup>
+```bash Python 3
+python3 application.py
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```bash Python
+python application.py
+```
+</CodeGroup>
+
+The server starts on `http://localhost:8000` with debug mode enabled.
+
+## Analyze your first user
+
+Once the server is running, you can analyze any Twitter user:
+
+<Steps>
+  <Step title="Open the web interface">
+    Navigate to `http://localhost:8000` in your browser. You'll see the TwiP interface with a username input field.
+  </Step>
+  
+  <Step title="Enter a Twitter username">
+    Type a Twitter handle (without the @ symbol) into the text field. For example: `elonmusk` or `BillGates`.
+  </Step>
+  
+  <Step title="View personality results">
+    Click the "Check" button. TwiP will:
+    
+    - Fetch up to 4,000 recent tweets from the user
+    - Preprocess and analyze the text
+    - Display the four-letter MBTI type (e.g., INTJ)
+    - Show the personality archetype (e.g., "The Mastermind")
+    - Provide a detailed personality description
+  </Step>
+</Steps>
+
+## How it works
+
+When you submit a username, TwiP executes the following pipeline:
+
+### 1. Tweet collection
+
+The `getTweets()` function in `predict.py:116` uses the Tweepy API to fetch tweets:
+
+```python predict.py
+def getTweets(user):
+    csvFile = open('user.csv', 'a', newline='')
+    csvWriter = csv.writer(csvFile)
+    try:
+        for i in range(0, 4):
+            tweets = api.user_timeline(
+                screen_name=user, count=1000, include_rts=True, page=i)
+            for status in tweets:
+                tw = preproc(status.text)
+                if tw.find(" ") == -1:
+                    tw = "blank"
+                csvWriter.writerow([tw])
+    except tweepy.TweepError:
+        print("Failed to run the command on that user, Skipping...")
+    csvFile.close()
+```
+
+### 2. Text preprocessing
+
+The `preproc()` function at `predict.py:79` applies:
+
+- Tokenization with custom regex patterns
+- Stopword removal using NLTK
+- Stemming with SnowballStemmer
+- Removal of URLs, mentions, and numbers
+- Unicode normalization
+
+### 3. Classification
+
+The `classify_user()` function at `predict.py:132` loads four pre-trained Naive Bayes models:
+
+```python predict.py
+model_IE = pickle.load(open("Pickle_Data/BNIEFinal.sav", 'rb'))
+model_SN = pickle.load(open("Pickle_Data/BNSNFinal.sav", 'rb'))
+model_TF = pickle.load(open('Pickle_Data/BNTFFinal.sav', 'rb'))
+model_PJ = pickle.load(open('Pickle_Data/BNPJFinal.sav', 'rb'))
+```
+
+Each model predicts one MBTI dimension, and results are combined using majority voting.
+
+### 4. Flask routing
+
+The main route in `application.py:6` handles both GET and POST requests:
+
+```python application.py
+@app.route("/",methods=["GET","POST"])
+def home():
+    if request.method == 'POST':
+        uid = request.form.get("userid")
+        name,mbti,personality = classify_user(uid)
+        return render_template('analysis.html',display=True,name=name,mbti=mbti,personality=personality)
+    return render_template('analysis.html',display=False)
+```
+
+## Personality types
+
+TwiP recognizes 16 Myers-Briggs types, each with a unique archetype:
+
+<CardGroup cols={2}>
+  <Card title="INTJ - The Mastermind">
+    Self-sufficient individuals who prefer working alone. Introverts who need to recharge after socializing.
+  </Card>
+  <Card title="ENFJ - The Giver">
+    Extroverted, idealistic, and charismatic. Excel at connecting with others regardless of background.
+  </Card>
+  <Card title="INTP - The Thinker">
+    Known for brilliant theories and unrelenting logic. Love patterns and have a keen eye for discrepancies.
+  </Card>
+  <Card title="ENTP - The Visionary">
+    Intelligent and knowledgeable extroverts who don't enjoy small talk. Need constant mental stimulation.
+  </Card>
+</CardGroup>
+
+See the full type system in `predict.py:195-213` with detailed descriptions for all 16 personalities.
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Try the live demo" icon="globe" href="/demo">
+    Test the hosted version without local setup
+  </Card>
+  <Card title="Train custom models" icon="brain" href="/technical/ml-models">
+    Learn how to retrain classifiers with new data
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

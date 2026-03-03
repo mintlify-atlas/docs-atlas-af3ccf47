@@ -1,0 +1,139 @@
+---
+title: Personality analysis
+description: End-to-end workflow for analyzing Twitter users and determining their MBTI personality type
+---
+
+TwiP's personality analysis system combines natural language processing with machine learning to predict MBTI personality types based on Twitter activity.
+
+## Analysis workflow
+
+The complete analysis process follows these steps:
+
+### 1. Tweet collection
+
+The system fetches up to 4000 tweets from the target user's timeline using the Twitter API. This includes both original tweets and retweets to capture a comprehensive view of the user's online personality.
+
+### 2. Text preprocessing
+
+Each tweet undergoes extensive NLP preprocessing through the `preproc()` function:
+
+```python
+def preproc(s):
+    s = unidecode(s)
+    POSTagger = preprocess(s)
+    tweet = ' '.join(POSTagger)
+    stop_words = set(stopwords.words('english'))
+    word_tokens = word_tokenize(tweet)
+    filtered_sentence = []
+    for w in POSTagger:
+        if w not in stop_words:
+            filtered_sentence.append(w)
+    stemmed_sentence = []
+    stemmer2 = SnowballStemmer("english", ignore_stopwords=True)
+    for w in filtered_sentence:
+        stemmed_sentence.append(stemmer2.stem(w))
+```
+
+#### Preprocessing steps
+
+- **Unicode normalization**: Converts special characters to ASCII using `unidecode`
+- **Tokenization**: Breaks text into individual tokens using regex patterns
+- **Emoticon preservation**: Detects and preserves emoticons during tokenization
+- **Stop word removal**: Filters out common English stop words
+- **Stemming**: Reduces words to their root form using SnowballStemmer
+- **Punctuation removal**: Strips punctuation while preserving meaningful tokens
+- **URL filtering**: Removes HTTP links from the text
+- **Digit removal**: Excludes numeric-only tokens
+
+<Info>
+Emoticons are specifically preserved during preprocessing because they carry emotional information relevant to personality assessment.
+</Info>
+
+### 3. Feature extraction
+
+The preprocessed tweets are transformed into numerical features using TF-IDF vectorization:
+
+```python
+vectorizer = TfidfVectorizer(vocabulary=mydict, min_df=1)
+x = vectorizer.fit_transform(tweetList).toarray()
+df = pd.DataFrame(x)
+```
+
+The vocabulary is loaded from a pre-computed frequency dictionary containing 300 key terms (`newfrequency300.csv`).
+
+<Note>
+Using a fixed vocabulary ensures consistent feature dimensions across all predictions and focuses on the most discriminative terms for personality classification.
+</Note>
+
+### 4. MBTI prediction
+
+TwiP uses four separate Naive Bayes classifiers to predict each dimension of the MBTI type:
+
+```python
+model_IE = pickle.load(open("Pickle_Data/BNIEFinal.sav", 'rb'))
+model_SN = pickle.load(open("Pickle_Data/BNSNFinal.sav", 'rb'))
+model_TF = pickle.load(open('Pickle_Data/BNTFFinal.sav', 'rb'))
+model_PJ = pickle.load(open('Pickle_Data/BNPJFinal.sav', 'rb'))
+
+IE = model_IE.predict(df)
+SN = model_SN.predict(df)
+TF = model_TF.predict(df)
+PJ = model_PJ.predict(df)
+```
+
+Each model predicts one of the four MBTI dimensions:
+
+- **IE**: Introversion vs. Extraversion
+- **SN**: Sensing vs. Intuition
+- **TF**: Thinking vs. Feeling
+- **PJ**: Perceiving vs. Judging
+
+### 5. Voting and aggregation
+
+Since each tweet receives an individual prediction, TwiP uses majority voting to determine the final personality type:
+
+```python
+b = Counter(IE)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("I")
+else:
+    answer.append("E")
+```
+
+This process repeats for all four dimensions, and the results are concatenated into a four-letter MBTI code (e.g., "INTJ", "ENFP").
+
+<Info>
+Voting across multiple tweets improves prediction robustness by reducing the impact of individual tweet anomalies.
+</Info>
+
+## Output format
+
+The `classify_user()` function returns three values:
+
+1. **Username**: The Twitter handle analyzed
+2. **MBTI type**: The four-letter personality code
+3. **Personality details**: A dictionary containing:
+   - `type`: The personality archetype name (e.g., "The Mastermind")
+   - `statement`: A detailed description of the personality type
+
+```python
+username, mbti, personality = classify_user("amanthe001")
+print(f"User: {username}")
+print(f"Type: {mbti} - {personality['type']}")
+print(personality['statement'])
+```
+
+## Required data files
+
+The analysis pipeline depends on several pre-trained models and data files:
+
+- `CSV_Data/newfrequency300.csv`: Feature vocabulary with 300 terms
+- `Pickle_Data/BNIEFinal.sav`: Naive Bayes model for I/E dimension
+- `Pickle_Data/BNSNFinal.sav`: Naive Bayes model for S/N dimension
+- `Pickle_Data/BNTFFinal.sav`: Naive Bayes model for T/F dimension
+- `Pickle_Data/BNPJFinal.sav`: Naive Bayes model for P/J dimension
+
+<Warning>
+Ensure all model files and the vocabulary CSV are present in their respective directories before running analysis. Missing files will cause runtime errors.
+</Warning>

@@ -1,0 +1,177 @@
+---
+title: MBTI classification
+description: Understanding the 16 personality types and TwiP's classification approach
+---
+
+TwiP classifies Twitter users into one of 16 Myers-Briggs Type Indicator (MBTI) personality types using machine learning models trained on linguistic patterns.
+
+## The MBTI framework
+
+The MBTI system categorizes personality along four dimensions, each with two opposing preferences:
+
+### Dimension 1: Energy direction
+
+- **I (Introversion)**: Energy drawn from internal reflection
+- **E (Extraversion)**: Energy drawn from external interaction
+
+### Dimension 2: Information gathering
+
+- **S (Sensing)**: Focus on concrete facts and details
+- **N (Intuition)**: Focus on patterns and possibilities
+
+### Dimension 3: Decision making
+
+- **T (Thinking)**: Decisions based on logic and objectivity
+- **F (Feeling)**: Decisions based on values and empathy
+
+### Dimension 4: Lifestyle approach
+
+- **P (Perceiving)**: Flexible and spontaneous
+- **J (Judging)**: Organized and decisive
+
+<Info>
+Combining one letter from each dimension produces 16 unique personality types (e.g., INTJ, ESFP, INFP).
+</Info>
+
+## The 16 personality types
+
+TwiP recognizes and classifies users into these personality archetypes:
+
+### ENFJ - The Giver
+Extroverted, idealistic, charismatic, outspoken, highly principled and ethical. ENFJs know how to connect with others regardless of background or personality.
+
+### ISTJ - The Inspector
+Serious, formal, and proper. They love traditions and old-school values that uphold patience, hard work, honor, and social responsibility. Reserved, calm, quiet, and upright.
+
+### INFJ - The Counselor
+They have a different, usually more profound way of looking at the world. INFJs have substance and depth in their thinking, never taking anything at surface level or accepting things as they are.
+
+### INTJ - The Mastermind
+Usually self-sufficient and prefer to work alone rather than in a group. Socializing drains an introvert's energy, causing them to need to recharge.
+
+### ISTP - The Craftsman
+Mysterious people who are usually very rational and logical, but also quite spontaneous and enthusiastic. Their personality traits are less easily recognizable, and even people who know them well can't always anticipate their reactions.
+
+### ESFJ - The Provider
+Social butterflies whose need to interact with others and make people happy usually makes them popular. ESFJs tend to be cheerleaders or sports heroes, later focusing on organizing social events for families, friends, and communities.
+
+### INFP - The Idealist
+Prefer not to talk about themselves, especially in first encounters. They like spending time alone in quiet places making sense of what is happening around them. INFPs analyze signs and symbols as metaphors with deeper meanings.
+
+### ESFP - The Performer
+Born to be in front of others and capture the stage, ESFPs love the spotlight. They are thoughtful explorers who love learning and sharing what they learn with others. ESFPs are "people people" with strong interpersonal skills.
+
+### ENFP - The Champion
+Highly individualistic, Champions strive toward creating their own methods, looks, actions, habits, and ideas. They do not like cookie-cutter people and hate being forced to live inside a box.
+
+### ESTP - The Doer
+Governed by the need for social interaction, feelings and emotions, logical processes and reasoning, along with a need for freedom.
+
+### ESTJ - The Supervisor
+Organized, honest, dedicated, dignified, and traditional. Great believers in doing what they believe is right and socially acceptable. They gladly take their place as leaders of the pack and are the epitome of good citizenry.
+
+### ENTJ - The Commander
+Natural born leaders who like being in charge. ENTJs live in a world of possibilities and often see challenges and obstacles as great opportunities to push themselves.
+
+### INTP - The Thinker
+Well known for brilliant theories and unrelenting logic. They are arguably the most logical-minded of all personality types. INTPs love patterns, have a keen eye for discrepancies, and a good ability to read people.
+
+### ISFJ - The Nurturer
+Philanthropists who are always ready to give back and return generosity with even more generosity. The people and things they believe in are upheld and supported with enthusiasm and unselfishness.
+
+### ENTP - The Visionary
+Some of the rarest personalities in the world. Although extroverts, they don't enjoy small talk and may not thrive in many social situations. ENTPs are intelligent, knowledgeable, and need to be constantly mentally stimulated.
+
+### ISFP - The Composer
+Introverts that do not seem like introverts. Even if they have difficulties connecting to other people at first, they become warm, approachable, and friendly eventually. Fun to be with and very spontaneous, they want to live life to the fullest and embrace the present.
+
+<Note>
+Each personality type has unique linguistic markers that TwiP's models have learned to recognize in tweet patterns.
+</Note>
+
+## Classification approach
+
+TwiP uses a multi-model classification strategy:
+
+### Independent dimension prediction
+
+Rather than training a single 16-class classifier, TwiP uses four binary classifiers:
+
+```python
+model_IE = pickle.load(open("Pickle_Data/BNIEFinal.sav", 'rb'))
+model_SN = pickle.load(open("Pickle_Data/BNSNFinal.sav", 'rb'))
+model_TF = pickle.load(open('Pickle_Data/BNTFFinal.sav', 'rb'))
+model_PJ = pickle.load(open('Pickle_Data/BNPJFinal.sav', 'rb'))
+```
+
+This approach has several advantages:
+
+- **Reduced complexity**: Each model only needs to learn one dimension
+- **Better generalization**: Models are trained on more balanced datasets
+- **Interpretability**: Can see confidence for each individual dimension
+
+### Naive Bayes algorithm
+
+TwiP uses Naive Bayes classifiers because they:
+
+- Work well with high-dimensional text features
+- Handle sparse TF-IDF vectors efficiently
+- Provide probabilistic predictions
+- Train quickly on large datasets
+- Are robust to irrelevant features
+
+<Info>
+Naive Bayes assumes feature independence, which works surprisingly well for text classification despite tweets containing correlated words.
+</Info>
+
+### Prediction aggregation
+
+Each tweet receives four binary predictions (one per dimension). The final personality type is determined by majority voting:
+
+```python
+b = Counter(IE)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("I")
+else:
+    answer.append("E")
+```
+
+The four winning letters are concatenated to form the final MBTI type.
+
+<Warning>
+Prediction confidence varies by user. Users with fewer tweets or highly inconsistent language patterns may receive less reliable classifications.
+</Warning>
+
+## Model training
+
+While the training code is not included in the main application, the models were trained using:
+
+- **Training data**: Labeled Twitter datasets with known MBTI types
+- **Features**: TF-IDF vectors with a vocabulary of 300 discriminative terms
+- **Algorithm**: Bernoulli Naive Bayes (suggested by "BN" prefix in filenames)
+- **Validation**: Cross-validation to prevent overfitting
+
+## Personality output
+
+After classification, TwiP provides both the MBTI code and descriptive information:
+
+```python
+output = {
+    "ENFJ": ENFJ, "ISTJ": ISTJ, "INFJ": INFJ, "INTJ": INTJ,
+    "ISTP": ISTP, "ESFJ": ESFJ, "INFP": INFP, "ESFP": ESFP,
+    "ENFP": ENFP, "ESTP": ESTP, "ESTJ": ESTP, "ENTJ": ENTJ,
+    "INTP": INTP, "ISFJ": ISFJ, "ENTP": ENTP
+}
+
+return username, mbti, output.get(mbti, ELSE)
+```
+
+Each personality type includes:
+
+- **type**: The archetype name (e.g., "The Mastermind")
+- **statement**: A detailed description of traits and behaviors
+
+<Note>
+The personality descriptions provide context for interpreting the classification, helping users understand what their MBTI type means in practical terms.
+</Note>

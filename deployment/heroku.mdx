@@ -1,0 +1,297 @@
+---
+title: Heroku Deployment
+description: Deploy TwiP to Heroku for production use
+---
+
+This guide walks you through deploying TwiP to Heroku, a cloud platform that makes it easy to deploy, manage, and scale web applications.
+
+## Prerequisites
+
+Before deploying to Heroku, ensure you have:
+
+- A [Heroku account](https://signup.heroku.com/)
+- [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) installed
+- Git installed and configured
+- Twitter API credentials (see [Local Setup](/deployment/local-setup))
+- Your application tested locally
+
+## Deployment Files
+
+TwiP includes the necessary files for Heroku deployment:
+
+### Procfile
+
+The `Procfile` tells Heroku how to run your application:
+
+```
+web: gunicorn application:app
+```
+
+This configuration:
+- Defines a `web` process type
+- Uses Gunicorn as the production WSGI server
+- Points to the `app` object in `application.py`
+
+### runtime.txt
+
+Specifies the Python version:
+
+```
+python-3.8.5
+```
+
+### requirements.txt
+
+Contains all Python dependencies that Heroku will automatically install during deployment.
+
+## Deployment Steps
+
+<Steps>
+  <Step title="Install Heroku CLI">
+    If you haven't already, install the Heroku CLI:
+    
+    **macOS:**
+    ```bash
+    brew tap heroku/brew && brew install heroku
+    ```
+    
+    **Windows:**
+    Download and install from [Heroku's website](https://devcenter.heroku.com/articles/heroku-cli)
+    
+    **Linux:**
+    ```bash
+    curl https://cli-assets.heroku.com/install.sh | sh
+    ```
+  </Step>
+
+  <Step title="Login to Heroku">
+    Authenticate with your Heroku account:
+    
+    ```bash
+    heroku login
+    ```
+    
+    This will open a browser window for authentication.
+  </Step>
+
+  <Step title="Create a Heroku app">
+    Create a new Heroku application:
+    
+    ```bash
+    heroku create your-app-name
+    ```
+    
+    If you don't specify a name, Heroku will generate one automatically.
+    
+    This command also adds a Heroku remote to your Git repository:
+    ```bash
+    git remote -v
+    ```
+  </Step>
+
+  <Step title="Configure Twitter API credentials">
+    Set your Twitter API credentials as Heroku environment variables (config vars):
+    
+    ```bash
+    heroku config:set TWITTER_CONSUMER_KEY=your_consumer_key
+    heroku config:set TWITTER_CONSUMER_SECRET=your_consumer_secret
+    heroku config:set TWITTER_ACCESS_TOKEN=your_access_token
+    heroku config:set TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret
+    ```
+    
+    <Warning>
+      Before deploying to production, update `predict.py` to read credentials from environment variables instead of hardcoding them:
+      
+      ```python
+      import os
+      
+      ckey = os.environ.get('TWITTER_CONSUMER_KEY')
+      csecret = os.environ.get('TWITTER_CONSUMER_SECRET')
+      atoken = os.environ.get('TWITTER_ACCESS_TOKEN')
+      asecret = os.environ.get('TWITTER_ACCESS_TOKEN_SECRET')
+      ```
+    </Warning>
+  </Step>
+
+  <Step title="Commit your changes">
+    Ensure all changes are committed to Git:
+    
+    ```bash
+    git add .
+    git commit -m "Prepare for Heroku deployment"
+    ```
+  </Step>
+
+  <Step title="Deploy to Heroku">
+    Push your code to Heroku:
+    
+    ```bash
+    git push heroku main
+    ```
+    
+    Or if your default branch is `master`:
+    ```bash
+    git push heroku master
+    ```
+    
+    Heroku will automatically:
+    1. Detect that it's a Python application
+    2. Install Python 3.8.5 (from `runtime.txt`)
+    3. Install dependencies from `requirements.txt`
+    4. Start the application using the `Procfile`
+  </Step>
+
+  <Step title="Scale the web dyno">
+    Ensure at least one web dyno is running:
+    
+    ```bash
+    heroku ps:scale web=1
+    ```
+  </Step>
+
+  <Step title="Open your application">
+    Launch your deployed application:
+    
+    ```bash
+    heroku open
+    ```
+    
+    Your application is now live and accessible at `https://your-app-name.herokuapp.com`
+  </Step>
+</Steps>
+
+## Post-Deployment
+
+### View Logs
+
+Monitor your application logs:
+
+```bash
+heroku logs --tail
+```
+
+This shows real-time logs from your application.
+
+### Check Dyno Status
+
+View the status of your dynos:
+
+```bash
+heroku ps
+```
+
+### View Configuration Variables
+
+List all config vars:
+
+```bash
+heroku config
+```
+
+## Updating Your Application
+
+To deploy updates:
+
+<Steps>
+  <Step title="Make changes locally">
+    Modify your code and test locally.
+  </Step>
+
+  <Step title="Commit changes">
+    ```bash
+    git add .
+    git commit -m "Description of changes"
+    ```
+  </Step>
+
+  <Step title="Deploy to Heroku">
+    ```bash
+    git push heroku main
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Application Crashes
+
+If your application crashes:
+
+1. Check the logs:
+   ```bash
+   heroku logs --tail
+   ```
+
+2. Verify all dependencies are in `requirements.txt`
+
+3. Ensure the Procfile is correctly configured
+
+### Slug Size Too Large
+
+If your slug size exceeds Heroku's limit:
+
+1. Check for large files in your repository
+2. Add unnecessary files to `.gitignore`
+3. Consider using `.slugignore` for files needed in Git but not in deployment
+
+### Missing Model Files
+
+Ensure all required model files in `Pickle_Data/` are committed to your repository:
+
+```bash
+git add Pickle_Data/*.sav
+git commit -m "Add model files"
+```
+
+### Twitter API Rate Limits
+
+Monitor your Twitter API usage in the [Twitter Developer Portal](https://developer.twitter.com/). Consider implementing:
+
+- Caching mechanisms for frequently requested users
+- Rate limit handling with exponential backoff
+- User notifications when rate limits are reached
+
+## Performance Optimization
+
+<Note>
+  Heroku's free tier has limitations:
+  - Dyno sleeps after 30 minutes of inactivity
+  - 550-1000 dyno hours per month
+  - Limited memory and processing power
+  
+  For production use, consider upgrading to a paid dyno type.
+</Note>
+
+### Optimize Cold Starts
+
+- Minimize dependencies in `requirements.txt`
+- Use a web service like UptimeRobot to keep your dyno awake
+- Consider upgrading to a Hobby or Professional dyno
+
+### Database Considerations
+
+If you add database functionality:
+
+```bash
+heroku addons:create heroku-postgresql:hobby-dev
+```
+
+This adds a free PostgreSQL database to your application.
+
+## Heroku Dashboard
+
+Manage your application through the [Heroku Dashboard](https://dashboard.heroku.com/):
+
+- Monitor resource usage
+- Configure environment variables
+- View application metrics
+- Manage add-ons
+- Access logs
+
+## Next Steps
+
+- Set up continuous deployment with GitHub
+- Configure custom domain names
+- Add monitoring and error tracking (e.g., Sentry)
+- Implement caching with Redis
+- Scale your application as needed

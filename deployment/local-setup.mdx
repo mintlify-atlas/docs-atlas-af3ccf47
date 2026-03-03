@@ -1,0 +1,150 @@
+---
+title: Local Development Setup
+description: Set up TwiP on your local machine for development
+---
+
+This guide will help you set up TwiP for local development on your machine.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- Python 3.8.5 or higher
+- pip (Python package manager)
+- Git
+- Twitter Developer Account with API credentials
+
+## Getting Started
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the TwiP repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/anirudhtulasi/TwiP.git
+    cd TwiP
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required Python packages using pip:
+    
+    ```bash
+    pip install -r requirements.txt
+    ```
+    
+    This will install the following key dependencies:
+    - Flask 1.1.2 - Web framework
+    - Gunicorn - WSGI HTTP server
+    - Tweepy 3.9.0 - Twitter API library
+    - scikit-learn 0.23.2 - Machine learning library
+    - nltk 3.5 - Natural language processing
+    - pandas 1.1.4 - Data analysis library
+    - numpy 1.19.4 - Numerical computing
+    
+    And other supporting packages for text processing and analysis.
+  </Step>
+
+  <Step title="Download NLTK data">
+    The application requires NLTK stopwords and punkt tokenizer. These are automatically downloaded when you run the application, but you can manually download them:
+    
+    ```python
+    python -c "import nltk; nltk.download('stopwords'); nltk.download('punkt')"
+    ```
+  </Step>
+
+  <Step title="Configure Twitter API credentials">
+    You need to configure your Twitter API credentials to enable tweet mining functionality.
+    
+    1. Go to the [Twitter Developer Portal](https://developer.twitter.com/)
+    2. Create a new app or use an existing one
+    3. Navigate to the "Keys and Tokens" section
+    4. Generate the following credentials:
+       - Consumer Key (API Key)
+       - Consumer Secret (API Secret)
+       - Access Token
+       - Access Token Secret
+    
+    5. Open `predict.py` and update the credentials:
+    
+    ```python
+    ckey = 'your_consumer_key'
+    csecret = 'your_consumer_secret'
+    atoken = 'your_access_token'
+    asecret = 'your_access_token_secret'
+    ```
+    
+    <Warning>
+      Never commit your API credentials to version control. Consider using environment variables for production deployments.
+    </Warning>
+  </Step>
+
+  <Step title="Run the application">
+    Start the Flask development server:
+    
+    ```bash
+    python application.py
+    ```
+    
+    The application will start on `http://0.0.0.0:8000` with debug mode enabled.
+  </Step>
+
+  <Step title="Access the application">
+    Open your web browser and navigate to:
+    
+    ```
+    http://localhost:8000
+    ```
+    
+    You should see the TwiP interface where you can enter a Twitter username for personality analysis.
+  </Step>
+</Steps>
+
+## Project Structure
+
+Key files in the project:
+
+- `application.py` - Main Flask application with routes
+- `predict.py` - Twitter API integration and personality classification logic
+- `requirements.txt` - Python dependencies
+- `Procfile` - Heroku deployment configuration
+- `runtime.txt` - Python version specification
+
+## Development Tips
+
+<Note>
+  The application runs in debug mode by default during local development, which provides:
+  - Automatic reload on code changes
+  - Detailed error messages
+  - Interactive debugger
+</Note>
+
+## Troubleshooting
+
+### Import Errors
+
+If you encounter import errors, ensure all dependencies are installed:
+
+```bash
+pip install -r requirements.txt --upgrade
+```
+
+### Twitter API Rate Limits
+
+The Twitter API has rate limits. If you exceed them, you'll need to wait before making additional requests. The application fetches up to 4000 tweets per user analysis.
+
+### Missing Model Files
+
+The application requires pre-trained model files in the `Pickle_Data/` directory:
+- `BNIEFinal.sav`
+- `BNSNFinal.sav`
+- `BNTFFinal.sav`
+- `BNPJFinal.sav`
+
+Ensure these files exist before running predictions.
+
+## Next Steps
+
+- Learn how to [deploy to Heroku](/deployment/heroku)
+- Explore the personality classification algorithm
+- Train custom models with your own data

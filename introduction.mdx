@@ -1,0 +1,71 @@
+---
+title: Introduction to TwiP
+description: Discover personality types from Twitter profiles using machine learning and Myers-Briggs Type Indicator classification
+---
+
+## Predict personality from tweets
+
+TwiP analyzes Twitter accounts to predict Myers-Briggs personality types using machine learning. By mining tweet content, hashtags, emoticons, and language patterns, TwiP classifies users into one of 16 distinct MBTI personality types.
+
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="/quickstart">
+    Get your first personality analysis running in under 5 minutes
+  </Card>
+  <Card title="Live demo" icon="globe" href="/demo">
+    Try the hosted application at anirudhxtwitter.herokuapp.com
+  </Card>
+  <Card title="API reference" icon="code" href="/api/core-functions">
+    Explore the core functions and ML pipeline
+  </Card>
+  <Card title="Model training" icon="brain" href="/technical/ml-models">
+    Learn how the Naive Bayes classifiers are trained
+  </Card>
+</CardGroup>
+
+## How it works
+
+TwiP uses a sophisticated natural language processing pipeline to extract personality signals from Twitter data:
+
+<Steps>
+  <Step title="Fetch tweets">
+    Connects to Twitter REST API using Tweepy to retrieve up to 4,000 recent tweets from the target user's timeline
+  </Step>
+  <Step title="Preprocess text">
+    Applies tokenization, stopword removal, and stemming to normalize tweet content. Removes URLs, handles emoticons, and processes Unicode characters
+  </Step>
+  <Step title="Feature extraction">
+    Transforms preprocessed text into TF-IDF vectors using a vocabulary of 300 most discriminative n-grams learned during training
+  </Step>
+  <Step title="Classification">
+    Four independent Naive Bayes classifiers predict each MBTI dimension (I/E, S/N, T/F, P/J) based on tweet patterns
+  </Step>
+  <Step title="Type determination">
+    Combines predictions using majority voting to determine the final four-letter personality type and associated archetype
+  </Step>
+</Steps>
+
+## Myers-Briggs personality types
+
+TwiP classifies users into 16 MBTI types, each representing a unique combination of four dimensions:
+
+- **I/E**: Introversion vs Extraversion
+- **S/N**: Sensing vs Intuition  
+- **T/F**: Thinking vs Feeling
+- **P/J**: Perceiving vs Judging
+
+Each type has a distinct archetype name and personality description, from "The Giver" (ENFJ) to "The Thinker" (INTP).
+
+## Technology stack
+
+TwiP is built with Python and deployed as a Flask web application:
+
+- **Flask 1.1.2** - Lightweight web framework
+- **Tweepy 3.9.0** - Twitter API integration
+- **scikit-learn 0.23.2** - Machine learning and Naive Bayes classifiers
+- **NLTK 3.5** - Natural language processing and text preprocessing
+- **pandas 1.1.4** - Data manipulation and analysis
+- **Heroku** - Cloud platform for deployment
+
+## Get started
+
+Ready to analyze Twitter personalities? Head to the [quickstart guide](/quickstart) to set up TwiP locally or try the [live demo](/demo) to see it in action.

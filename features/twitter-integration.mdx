@@ -1,0 +1,92 @@
+---
+title: Twitter integration
+description: How TwiP fetches and processes tweets using the Twitter REST API
+---
+
+TwiP uses the Tweepy library to interact with the Twitter REST API, enabling it to fetch user tweets for personality analysis.
+
+## Authentication
+
+TwiP authenticates with Twitter using OAuth 1.0a, which requires four credentials:
+
+- Consumer Key (API Key)
+- Consumer Secret (API Secret)
+- Access Token
+- Access Token Secret
+
+The authentication process is handled by Tweepy's `OAuthHandler`:
+
+```python
+auth = tweepy.OAuthHandler(ckey, csecret)
+auth.set_access_token(atoken, asecret)
+api = tweepy.API(auth)
+```
+
+<Warning>
+API credentials should be stored securely using environment variables or a secrets manager, not hardcoded in source files.
+</Warning>
+
+## Fetching tweets
+
+The `getTweets()` function retrieves tweets from a specified Twitter user using the `user_timeline` endpoint:
+
+```python
+def getTweets(user):
+    csvFile = open('user.csv', 'a', newline='')
+    csvWriter = csv.writer(csvFile)
+    try:
+        for i in range(0, 4):
+            tweets = api.user_timeline(
+                screen_name=user, count=1000, include_rts=True, page=i)
+            for status in tweets:
+                tw = preproc(status.text)
+                if tw.find(" ") == -1:
+                    tw = "blank"
+                csvWriter.writerow([tw])
+    except tweepy.TweepError:
+        print("Failed to run the command on that user, Skipping...")
+    csvFile.close()
+```
+
+### Tweet retrieval parameters
+
+- **screen_name**: The Twitter handle of the user to analyze
+- **count**: Maximum number of tweets per page (up to 1000)
+- **include_rts**: Includes retweets in the results
+- **page**: Pagination parameter (iterates 4 times for up to 4000 tweets)
+
+<Info>
+TwiP attempts to fetch up to 4000 tweets per user by paginating through 4 pages of 1000 tweets each. This provides a substantial corpus for personality analysis.
+</Info>
+
+## Tweet preprocessing pipeline
+
+Each fetched tweet undergoes preprocessing before being stored:
+
+1. **Text extraction**: The raw tweet text is extracted from the status object
+2. **Preprocessing**: The `preproc()` function cleans and normalizes the text
+3. **Validation**: Tweets with no spaces (single words) are marked as "blank"
+4. **Storage**: Processed tweets are written to a CSV file for analysis
+
+<Note>
+Tweets are preprocessed immediately upon retrieval to reduce memory usage and prepare data for the classification pipeline.
+</Note>
+
+## Error handling
+
+TwiP handles Twitter API errors gracefully:
+
+- **TweepError**: Catches API errors such as rate limiting, private accounts, or non-existent users
+- **Fallback behavior**: When an error occurs, the function prints a message and skips that user
+- **CSV cleanup**: The CSV file is properly closed even when errors occur
+
+## API rate limits
+
+The Twitter API has rate limits that affect tweet retrieval:
+
+- User timeline endpoint: 900 requests per 15-minute window
+- Each request can retrieve up to 200 tweets (TwiP requests 1000 but may receive fewer)
+
+<Warning>
+When analyzing multiple users in succession, be aware of Twitter's rate limits. Implement appropriate delays or error handling to avoid temporary API blocks.
+</Warning>

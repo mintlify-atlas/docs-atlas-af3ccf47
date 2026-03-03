@@ -1,0 +1,254 @@
+---
+title: 'NLP Pipeline'
+description: 'Text preprocessing and normalization workflow'
+---
+
+## Overview
+
+The NLP pipeline transforms raw tweet text into clean, normalized tokens suitable for machine learning. The preprocessing happens in the `preproc()` function, which calls `tokenize()` and `preprocess()` helper functions.
+
+## Pipeline Stages
+
+The text preprocessing follows this sequence:
+
+1. Unicode normalization
+2. Regex-based tokenization
+3. Stopword removal
+4. Stemming
+5. Punctuation removal
+6. Deduplication and filtering
+
+## Stage 1: Tokenization
+
+### Regex Patterns
+
+The tokenizer uses comprehensive regex patterns to extract different token types (`predict.py:47-59`):
+
+```python
+regex_str = [
+    emoticons_str,
+    r'<[^>]+>',  # HTML tags
+    r'(?:@[\w_]+)',  # @-mentions
+    r"(?:\#+[\w_]+[\w\'_\-]*[\w_]+)",  # hash-tags
+    # URLs
+    r'http[s]?://(?:[a-z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-f][0-9a-f]))+',
+    
+    r'(?:(?:\d+,?)+(?:\.?\d+)?)',  # numbers
+    r"(?:[a-z][a-z'\-_]+[a-z])",  # words with - and '
+    r'(?:[\w_]+)',  # other words
+    r'(?:\S)'  # anything else
+]
+```
+
+### Emoticon Detection
+
+The system recognizes text-based emoticons:
+
+```python
+emoticons_str = r"""
+    (?:
+        [:=;] # Eyes
+        [oO\-]? # Nose (optional)
+        [D\)\]\(\/\\OpP] # Mouth
+    )"""
+```
+
+### Emoji Detection
+
+Unicode emojis are detected using a compiled pattern:
+
+```python
+emoji_pattern = re.compile("["
+                           u"\U0001F600-\U0001F64F"  # emoticons
+                           u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                           u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                           u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                           "]+", flags=re.UNICODE)
+```
+
+**Note**: Emoji removal is commented out in the current implementation (`predict.py:80`).
+
+### Tokenize Function
+
+The `tokenize()` function extracts all matching patterns:
+
+```python
+def tokenize(s):
+    return tokens_re.findall(s)
+```
+
+Returns: List of token strings
+
+### Preprocess Function
+
+The `preprocess()` function optionally lowercases tokens while preserving emoticons:
+
+```python
+def preprocess(s, lowercase=False):
+    tokens = tokenize(s)
+    if lowercase:
+        tokens = [token if emoticon_re.search(
+            token) else token.lower() for token in tokens]
+    return tokens
+```
+
+## Stage 2: Unicode Normalization
+
+The `preproc()` function starts with Unicode conversion using `unidecode`:
+
+```python
+s = unidecode(s)
+```
+
+This converts Unicode characters to ASCII equivalents (e.g., "café" → "cafe").
+
+## Stage 3: Stopword Removal
+
+Stopwords are filtered using NLTK's English stopword corpus:
+
+```python
+stop_words = set(stopwords.words('english'))
+word_tokens = word_tokenize(tweet)
+filtered_sentence = []
+for w in POSTagger:
+    if w not in stop_words:
+        filtered_sentence.append(w)
+```
+
+Common words like "the", "is", "at" are removed to focus on content-bearing terms.
+
+## Stage 4: Stemming
+
+Snowball Stemmer reduces words to their root form:
+
+```python
+stemmed_sentence = []
+stemmer2 = SnowballStemmer("english", ignore_stopwords=True)
+for w in filtered_sentence:
+    stemmed_sentence.append(stemmer2.stem(w))
+```
+
+**Examples:**
+- "running" → "run"
+- "happily" → "happi"
+- "studies" → "studi"
+
+The `ignore_stopwords=True` parameter prevents stemming of stopwords (though they're already filtered).
+
+## Stage 5: Punctuation Removal
+
+Punctuation is removed while joining tokens:
+
+```python
+temp = ' '.join(c for c in stemmed_sentence if c not in string.punctuation)
+preProcessed = temp.split(" ")
+```
+
+This removes characters like `!"#$%&'()*+,-./:;<=>?@[\]^_`{'{'}|}~`
+
+## Stage 6: Filtering and Deduplication
+
+Final cleanup removes:
+- Numeric tokens
+- URLs (containing 'http')
+- Duplicate tokens
+
+```python
+final = []
+for i in preProcessed:
+    if i not in final:
+        if i.isdigit():
+            pass
+        else:
+            if 'http' not in i:
+                final.append(i)
+temp1 = ' '.join(c for c in final)
+return temp1
+```
+
+## Complete Pipeline Example
+
+### Input Tweet
+```
+"Just finished reading an amazing book! 📚 Check it out: https://example.com/book #reading @bookclub"
+```
+
+### Processing Steps
+
+1. **Unicode normalization**: (No special characters in this example)
+2. **Tokenization**: `['Just', 'finished', 'reading', 'an', 'amazing', 'book', '!', '📚', 'Check', 'it', 'out', ':', 'https://example.com/book', '#reading', '@bookclub']`
+3. **Stopword removal**: `['Just', 'finished', 'reading', 'amazing', 'book', '!', '📚', 'Check', ':', 'https://example.com/book', '#reading', '@bookclub']`
+4. **Stemming**: `['just', 'finish', 'read', 'amaz', 'book', '!', '📚', 'check', ':', 'https://example.com/book', '#read', '@bookclub']`
+5. **Punctuation removal**: `['just', 'finish', 'read', 'amaz', 'book', '📚', 'check', 'https://example.com/book', '#read', '@bookclub']`
+6. **URL/duplicate filtering**: `['just', 'finish', 'read', 'amaz', 'book', '📚', 'check', '#read', '@bookclub']`
+
+### Output
+```
+"just finish read amaz book 📚 check #read @bookclub"
+```
+
+## Implementation Location
+
+All NLP functions are in `predict.py`:
+
+- Regex patterns: `predict.py:32-64`
+- `tokenize()`: `predict.py:67-68`
+- `preprocess()`: `predict.py:71-76`
+- `preproc()`: `predict.py:79-113`
+
+## Usage in Classification Pipeline
+
+The `getTweets()` function applies preprocessing to each tweet:
+
+```python
+for status in tweets:
+    tw = preproc(status.text)
+    if tw.find(" ") == -1:
+        tw = "blank"
+    csvWriter.writerow([tw])
+```
+
+Tweets with no spaces after preprocessing are marked as "blank".
+
+## Dependencies
+
+```python
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem.snowball import SnowballStemmer
+from unidecode import unidecode
+import re
+import string
+```
+
+**Required NLTK downloads:**
+```python
+nltk.download('stopwords')
+nltk.download('punkt')
+```
+
+## Design Decisions
+
+### Why Keep Mentions and Hashtags?
+
+The pipeline preserves `@mentions` and `#hashtags` because:
+- They may carry personality signals (e.g., frequent mentions indicate social behavior)
+- Hashtag topics reveal interests and values
+- The tokenizer extracts them as distinct features
+
+### Why Deduplicate?
+
+Duplication removal (`if i not in final`) prevents overweighting of repeated terms within a single tweet, ensuring more balanced feature representation.
+
+### Why Use Stemming Over Lemmatization?
+
+Stemming is faster than lemmatization and sufficient for bag-of-words models. The Snowball Stemmer provides good accuracy with lower computational cost.
+
+## Potential Improvements
+
+1. **Enable emoji removal** - Currently commented out, could reduce noise
+2. **Preserve emoticons** - Current implementation may lose emoticon information
+3. **Handle retweets differently** - RT content vs original tweets may have different signals
+4. **Normalize slang** - Common Twitter slang ("u" → "you") not currently handled
+5. **Entity recognition** - Could extract named entities for additional features

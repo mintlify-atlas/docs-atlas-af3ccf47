@@ -1,0 +1,201 @@
+---
+title: Live demo
+description: Try TwiP instantly with the hosted Heroku application
+---
+
+## Try TwiP now
+
+Experience TwiP without any installation by visiting the live demo:
+
+<Card title="TwiP Demo Application" icon="globe" href="https://anirudhxtwitter.herokuapp.com/">
+  Analyze any Twitter account instantly at anirudhxtwitter.herokuapp.com
+</Card>
+
+The demo runs the same code as the local version, deployed on Heroku's cloud platform.
+
+## How to use the demo
+
+<Steps>
+  <Step title="Visit the application">
+    Navigate to [anirudhxtwitter.herokuapp.com](https://anirudhxtwitter.herokuapp.com/) in your web browser.
+  </Step>
+  
+  <Step title="Enter a Twitter username">
+    In the text input field next to the Twitter logo, type any Twitter handle without the @ symbol.
+    
+    Try popular accounts like:
+    - `elonmusk` - Entrepreneur and CEO
+    - `BillGates` - Philanthropist and technologist
+    - `nasa` - Space exploration agency
+    - Your own Twitter handle
+  </Step>
+  
+  <Step title="Click 'Check'">
+    Press the "Check" button to start the analysis. The application will fetch and process tweets in real-time.
+  </Step>
+  
+  <Step title="View results">
+    The interface displays:
+    
+    - Large four-letter MBTI type (e.g., **INTJ**)
+    - Personality archetype name (e.g., "The Mastermind")
+    - Detailed personality description explaining key traits
+  </Step>
+</Steps>
+
+## Understanding your results
+
+TwiP analyzes recent tweets to determine the Myers-Briggs personality type across four dimensions:
+
+### Introversion (I) vs Extraversion (E)
+
+Determines whether the user's language patterns suggest:
+- **Introversion**: Focus on internal thoughts, reflection, and solitary activities
+- **Extraversion**: Emphasis on external interaction, social engagement, and group dynamics
+
+### Sensing (S) vs Intuition (N)
+
+Analyzes how the user processes information:
+- **Sensing**: Concrete details, facts, and present realities
+- **Intuition**: Abstract concepts, future possibilities, and patterns
+
+### Thinking (T) vs Feeling (F)
+
+Evaluates decision-making style:
+- **Thinking**: Logic, objectivity, and analytical reasoning
+- **Feeling**: Empathy, values, and emotional considerations
+
+### Perceiving (P) vs Judging (J)
+
+Assesses approach to structure:
+- **Perceiving**: Flexibility, spontaneity, and openness
+- **Judging**: Organization, planning, and decisiveness
+
+## Example personality types
+
+Here are some of the 16 types TwiP can identify:
+
+<CardGroup cols={2}>
+  <Card title="ENFJ - The Giver">
+    Extroverted, idealistic, charismatic, and outspoken. Highly principled and ethical, with an innate ability to connect with others regardless of background or personality.
+  </Card>
+  
+  <Card title="ISTJ - The Inspector">
+    Appear serious, formal, and proper. Love traditions and old-school values that uphold patience, hard work, honor, and social responsibility. Reserved, calm, quiet, and upright.
+  </Card>
+  
+  <Card title="INFJ - The Counselor">
+    Have a different, usually more profound way of looking at the world. Think with substance and depth, never taking anything at surface level or accepting things as they are.
+  </Card>
+  
+  <Card title="INTJ - The Mastermind">
+    Usually self-sufficient and prefer working alone over groups. Socializing drains their energy, requiring time to recharge. Strategic thinkers who value competence.
+  </Card>
+  
+  <Card title="ISTP - The Craftsman">
+    Mysterious people who are rational and logical, yet spontaneous and enthusiastic. Hide unpredictable traits from the outside world very successfully.
+  </Card>
+  
+  <Card title="ESFJ - The Provider">
+    Social butterflies whose need to interact with others makes them popular. Focused on organizing social events for families, friends, and communities.
+  </Card>
+  
+  <Card title="INFP - The Idealist">
+    Prefer not to talk about themselves with new people. Love spending time alone in quiet places making sense of the world. Analyze signs and symbols as metaphors.
+  </Card>
+  
+  <Card title="ESFP - The Performer">
+    Born to capture the stage and love the spotlight. Thoughtful explorers who love learning and sharing discoveries with others. Strong interpersonal skills.
+  </Card>
+  
+  <Card title="ENFP - The Champion">
+    Highly individualistic, striving to create their own methods, looks, and ideas. Don't like cookie-cutter approaches and resist being forced into boxes.
+  </Card>
+  
+  <Card title="ESTP - The Doer">
+    Governed by the need for social interaction, emotions, logical reasoning, and freedom. Pragmatic and action-oriented problem solvers.
+  </Card>
+  
+  <Card title="ESTJ - The Supervisor">
+    Organized, honest, dedicated, dignified, and traditional. Great believers in doing what's right and socially acceptable. Natural leaders of the pack.
+  </Card>
+  
+  <Card title="ENTJ - The Commander">
+    Natural born leaders who like being in charge. Live in a world of possibilities, seeing challenges and obstacles as opportunities to push themselves.
+  </Card>
+  
+  <Card title="INTP - The Thinker">
+    Known for brilliant theories and unrelenting logic. Arguably the most logical-minded type. Love patterns, have keen eyes for discrepancies, and can read people well.
+  </Card>
+  
+  <Card title="ISFJ - The Nurturer">
+    Philanthropists always ready to give back. Return generosity with even more generosity. Uphold beliefs with enthusiasm and unselfishness.
+  </Card>
+  
+  <Card title="ENTP - The Visionary">
+    Rare personalities who don't enjoy small talk despite being extroverts. Intelligent, knowledgeable, and need constant mental stimulation.
+  </Card>
+  
+  <Card title="ISFP - The Composer">
+    Introverts who don't seem introverted. Become warm, approachable, and friendly over time. Fun, spontaneous, and always exploring new experiences.
+  </Card>
+</CardGroup>
+
+## Behind the scenes
+
+The demo application runs on Heroku using the same Flask architecture as the local version:
+
+### Architecture
+
+```python application.py
+from flask import Flask,request,render_template
+from predict import classify_user
+
+app = Flask(__name__)
+
+@app.route("/",methods=["GET","POST"])
+def home():
+    if request.method == 'POST':
+        uid = request.form.get("userid")
+        name,mbti,personality = classify_user(uid)
+        return render_template('analysis.html',display=True,
+                             name=name,mbti=mbti,personality=personality)
+    return render_template('analysis.html',display=False)
+```
+
+### Deployment
+
+The application is deployed on Heroku with:
+- **Gunicorn** WSGI server for production
+- Pre-trained Naive Bayes models in `Pickle_Data/` directory
+- TF-IDF vocabulary file in `CSV_Data/newfrequency300.csv`
+- Twitter API credentials configured as environment variables
+
+### Performance
+
+Analysis typically takes 10-30 seconds depending on:
+- Number of tweets available (up to 4,000 analyzed)
+- Twitter API rate limits
+- Text preprocessing complexity
+- Server load on Heroku dyno
+
+## Limitations
+
+Be aware of these constraints when using the demo:
+
+- **Protected accounts**: Cannot analyze private Twitter accounts
+- **Rate limits**: Twitter API restricts requests per time window
+- **Tweet volume**: Accounts with few tweets may produce less accurate results
+- **Language**: Optimized for English-language tweets
+- **Recency bias**: Only analyzes recent tweets, not entire history
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run locally" icon="laptop-code" href="/quickstart">
+    Set up TwiP on your machine for unlimited analyses
+  </Card>
+  <Card title="Explore the code" icon="code" href="/api/core-functions">
+    Dive into the implementation and ML pipeline
+  </Card>
+</CardGroup>

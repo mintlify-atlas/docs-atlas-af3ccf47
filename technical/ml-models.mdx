@@ -1,0 +1,279 @@
+---
+title: 'Machine Learning Models'
+description: 'Naive Bayes classifiers and training approach'
+---
+
+## Model Architecture
+
+TwiP uses an **ensemble of four independent Naive Bayes classifiers**, each predicting one dimension of the MBTI personality framework. This multi-model approach treats personality classification as four separate binary classification problems.
+
+## MBTI Dimensions
+
+Each classifier predicts one of four personality dimensions:
+
+| Dimension | Classes | Model File | Training Data |
+|-----------|---------|------------|---------------|
+| **IE** | Introversion (I) vs Extroversion (E) | `BNIEFinal.sav` | `IEFinaltest.csv` (24.8 MB) |
+| **SN** | Sensing (S) vs Intuition (N) | `BNSNFinal.sav` | `SNFinaltest.csv` (13.5 MB) |
+| **TF** | Thinking (T) vs Feeling (F) | `BNTFFinal.sav` | `TFFinaltest.csv` (18.4 MB) |
+| **PJ** | Perceiving (P) vs Judging (J) | `BNPJFinal.sav` | `PJFinaltest.csv` (19.0 MB) |
+
+## Naive Bayes Algorithm
+
+### Why Naive Bayes?
+
+Naive Bayes is well-suited for text classification because:
+
+- **Efficient with high-dimensional data** - Works well with TF-IDF feature vectors
+- **Fast training and prediction** - Suitable for real-time web applications
+- **Probabilistic output** - Provides confidence scores for predictions
+- **Handles sparse data** - Most tweets don't contain all 300 vocabulary words
+- **Simple assumptions** - Features (words) are independent given the class
+
+### Model Type
+
+While the exact variant isn't specified in the code, the "BN" prefix in filenames suggests **Bernoulli Naive Bayes** or **Multinomial Naive Bayes**, both common for text classification.
+
+## Feature Engineering
+
+### TF-IDF Vectorization
+
+Tweets are converted to numerical features using TF-IDF (Term Frequency-Inverse Document Frequency):
+
+```python
+with open('CSV_Data/newfrequency300.csv', 'rt') as f:
+    csvReader = csv.reader(f)
+    mydict = {rows[1]: int(rows[0]) for rows in csvReader}
+
+vectorizer = TfidfVectorizer(vocabulary=mydict, min_df=1)
+x = vectorizer.fit_transform(tweetList).toarray()
+df = pd.DataFrame(x)
+```
+
+**Key Points:**
+- Fixed vocabulary of 300 words from `newfrequency300.csv`
+- Pre-defined vocabulary ensures consistency between training and prediction
+- `min_df=1` means words must appear at least once
+- Each tweet becomes a 300-dimensional feature vector
+
+### Vocabulary Selection
+
+The `newfrequency300.csv` file contains the 300 most discriminative words for personality prediction. This vocabulary was likely selected during training based on:
+- Word frequency across different personality types
+- Information gain or chi-squared statistics
+- Domain knowledge about personality-relevant language
+
+## Model Loading
+
+Models are deserialized from pickle files on each prediction request:
+
+```python
+model_IE = pickle.load(open("Pickle_Data/BNIEFinal.sav", 'rb'))
+model_SN = pickle.load(open("Pickle_Data/BNSNFinal.sav", 'rb'))
+model_TF = pickle.load(open('Pickle_Data/BNTFFinal.sav', 'rb'))
+model_PJ = pickle.load(open('Pickle_Data/BNPJFinal.sav', 'rb'))
+```
+
+Each `.sav` file (~10 KB) contains:
+- Model parameters (probabilities)
+- Feature names
+- Class labels
+- scikit-learn metadata
+
+## Prediction Process
+
+### Individual Predictions
+
+Each model predicts all tweets independently:
+
+```python
+IE = model_IE.predict(df)
+SN = model_SN.predict(df)
+TF = model_TF.predict(df)
+PJ = model_PJ.predict(df)
+```
+
+**Output**: Array of predictions (one per tweet)
+- `1.0` or `1` = First class (I, S, T, P)
+- `0.0` or `0` = Second class (E, N, F, J)
+
+### Majority Voting
+
+Final personality dimension determined by most common prediction:
+
+```python
+b = Counter(IE)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("I")
+else:
+    answer.append("E")
+```
+
+This process repeats for all four dimensions:
+
+```python
+# IE dimension
+b = Counter(IE)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("I")
+else:
+    answer.append("E")
+
+# SN dimension
+b = Counter(SN)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("S")
+else:
+    answer.append("N")
+
+# TF dimension
+b = Counter(TF)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("T")
+else:
+    answer.append("F")
+
+# PJ dimension
+b = Counter(PJ)
+value = b.most_common(1)
+if value[0][0] == 1.0:
+    answer.append("P")
+else:
+    answer.append("J")
+```
+
+### MBTI Type Assembly
+
+Four dimension predictions combined into final type:
+
+```python
+mbti = "".join(answer)
+```
+
+**Example**: `['I', 'N', 'T', 'P']` → `"INTP"`
+
+## Training Approach
+
+While training code isn't included in the application, the data files reveal the approach:
+
+### Training Data Structure
+
+Four separate training datasets:
+- `IEFinaltest.csv` - 24.8 MB (likely most samples)
+- `SNFinaltest.csv` - 13.5 MB
+- `TFFinaltest.csv` - 18.4 MB  
+- `PJFinaltest.csv` - 19.0 MB
+
+Each CSV likely contains:
+- Preprocessed tweet text
+- Binary label (0 or 1)
+
+### Training Pipeline (Inferred)
+
+1. **Data Collection** - Gather tweets from users with known MBTI types
+2. **Preprocessing** - Apply `preproc()` to all tweets
+3. **Feature Extraction** - Create vocabulary and compute TF-IDF
+4. **Model Training** - Train four separate Naive Bayes classifiers
+5. **Validation** - Test on held-out data ("Finaltest.csv" suggests test sets)
+6. **Serialization** - Save models as pickle files
+
+### Independent Training
+
+Each dimension is trained independently because:
+- Different dimensions may rely on different linguistic features
+- Independent models can be updated separately
+- Reduces computational complexity vs single 16-class classifier
+- More flexible for handling class imbalance
+
+## Model Files
+
+All model files located in `Pickle_Data/`:
+
+```bash
+Pickle_Data/
+├── BNIEFinal.sav  # 10,187 bytes
+├── BNSNFinal.sav  # 10,187 bytes
+├── BNTFFinal.sav  # 10,187 bytes
+└── BNPJFinal.sav  # 10,187 bytes
+```
+
+Identical file sizes suggest:
+- Same model architecture for all dimensions
+- Similar vocabulary size
+- Consistent training configuration
+
+## Prediction Example
+
+Complete flow from tweets to MBTI type:
+
+```python
+# Input: 100 preprocessed tweets from user
+tweetList = ["just finish read amaz book", "love code project", ...]
+
+# Feature extraction
+x = vectorizer.fit_transform(tweetList).toarray()  # Shape: (100, 300)
+
+# Predictions
+IE = model_IE.predict(df)  # [1, 1, 0, 1, 1, ...] (100 predictions)
+SN = model_SN.predict(df)  # [0, 1, 1, 0, 0, ...]
+TF = model_TF.predict(df)  # [1, 1, 1, 0, 1, ...]
+PJ = model_PJ.predict(df)  # [1, 0, 1, 1, 1, ...]
+
+# Majority voting
+# IE: 70 ones, 30 zeros → I (Introvert)
+# SN: 45 ones, 55 zeros → N (Intuition)
+# TF: 80 ones, 20 zeros → T (Thinking)
+# PJ: 65 ones, 35 zeros → P (Perceiving)
+
+# Final result: INTP
+```
+
+## Advantages of Multi-Model Approach
+
+1. **Modularity** - Each model can be retrained independently
+2. **Interpretability** - Can analyze which dimensions are more/less confident
+3. **Flexibility** - Easy to add new dimensions or modify existing ones
+4. **Reduced Complexity** - 4 binary classifiers simpler than 1 16-class classifier
+5. **Better Generalization** - Each model specializes in one dimension
+
+## Limitations
+
+1. **No Probability Calibration** - Uses simple majority voting instead of prediction probabilities
+2. **Binary Classification** - Doesn't account for personality dimension continuums
+3. **Fixed Vocabulary** - Cannot adapt to new slang or linguistic trends
+4. **No Uncertainty Quantification** - Doesn't report confidence scores
+5. **Tweet Volume Dependency** - Requires many tweets for accurate predictions
+6. **Assumes Independence** - MBTI dimensions may actually correlate
+
+## Model Performance Considerations
+
+### Factors Affecting Accuracy
+
+- **Tweet Count** - More tweets provide better signal (system fetches 4000)
+- **Tweet Quality** - Original content better than retweets
+- **Vocabulary Coverage** - Tweets must contain words from 300-word vocabulary
+- **Preprocessing Quality** - Clean, well-stemmed text improves features
+- **Class Balance** - Training data balance affects prediction bias
+
+### Potential Improvements
+
+1. **Use Probability Scores** - Weight by prediction confidence
+2. **Add Ensemble Methods** - Combine multiple algorithm types
+3. **Expand Vocabulary** - Use larger feature set
+4. **Add N-grams** - Capture phrase patterns
+5. **Deep Learning** - Use neural networks for better representation
+6. **Multi-label Classification** - Predict all 16 types directly
+7. **Confidence Thresholds** - Return "uncertain" when votes are close
+
+## Implementation Reference
+
+All model code in `predict.py:132-191`:
+
+- Feature extraction: `predict.py:139-145`
+- Model loading: `predict.py:148-151`
+- Prediction: `predict.py:154-157`
+- Majority voting: `predict.py:160-191`

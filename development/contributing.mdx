@@ -1,0 +1,199 @@
+---
+title: 'Contributing'
+description: 'How to contribute to the TwiP project'
+---
+
+## Contributing to TwiP
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+## Getting Started
+
+Before you begin contributing, make sure you have a local development environment set up.
+
+### Prerequisites
+
+To view the required packages for this project:
+
+```bash
+cd TwiP
+cat requirements.txt
+```
+
+### Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/anirudhtulasi/TwiP.git
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    ```bash
+    pip install -r requirements.txt
+    ```
+  </Step>
+  
+  <Step title="Train the model">
+    ```bash
+    cd TwiP
+    python3 train.py
+    ```
+  </Step>
+  
+  <Step title="Run the model">
+    ```bash
+    python3 predict.py
+    ```
+  </Step>
+</Steps>
+
+## Contributing Workflow
+
+Follow these steps to contribute to the project:
+
+<Steps>
+  <Step title="Fork the Project">
+    Create your own fork of the repository by clicking the "Fork" button on GitHub.
+  </Step>
+  
+  <Step title="Create your Feature Branch">
+    ```bash
+    git checkout -b feature/AmazingFeature
+    ```
+    
+    Use descriptive branch names that clearly indicate the feature or fix you're working on.
+  </Step>
+  
+  <Step title="Commit your Changes">
+    ```bash
+    git commit -m 'Add some AmazingFeature'
+    ```
+    
+    Write clear, concise commit messages that explain what your changes do.
+  </Step>
+  
+  <Step title="Push to the Branch">
+    ```bash
+    git push origin feature/AmazingFeature
+    ```
+  </Step>
+  
+  <Step title="Open a Pull Request">
+    Navigate to the original repository and click "New Pull Request". Provide a detailed description of your changes.
+  </Step>
+</Steps>
+
+## Project Structure
+
+Understanding the codebase structure will help you contribute more effectively:
+
+- **predict.py**: Core prediction and classification logic
+  - `classify_user()`: Main classification function
+  - `getTweets()`: Twitter API integration
+  - `preproc()`, `tokenize()`, `preprocess()`: NLP preprocessing functions
+
+- **application.py**: Flask web application
+  - Web routes and template rendering
+  - User interface integration
+
+- **train.py**: Model training pipeline
+  - Naive Bayes classifier training
+  - Feature extraction and vectorization
+
+- **CSV_Data/**: Training data and vocabulary files
+- **Pickle_Data/**: Serialized trained models
+
+## Areas for Contribution
+
+### Code Contributions
+
+- Improve classification accuracy
+- Add support for additional personality frameworks
+- Optimize tweet fetching and processing
+- Enhance error handling and logging
+- Add unit tests and integration tests
+
+### Documentation
+
+- Improve code comments and docstrings
+- Create tutorials and guides
+- Document API endpoints
+- Add examples and use cases
+
+### Bug Reports
+
+- Test the application with various Twitter accounts
+- Report issues with detailed reproduction steps
+- Suggest improvements to the user experience
+
+## Code Style Guidelines
+
+- Follow PEP 8 style guide for Python code
+- Use meaningful variable and function names
+- Add comments for complex logic
+- Keep functions focused on a single responsibility
+- Update documentation when adding new features
+
+## Testing Your Changes
+
+Before submitting a pull request:
+
+1. **Test the prediction pipeline**:
+   ```bash
+   python3 predict.py
+   ```
+
+2. **Test the web application**:
+   ```bash
+   python3 application.py
+   ```
+   Visit `http://localhost:8000` to test the interface.
+
+3. **Verify model training** (if you modified training code):
+   ```bash
+   python3 train.py
+   ```
+
+## Reporting Issues
+
+If you encounter bugs or have feature requests:
+
+- Check [existing issues](https://github.com/anirudhtulasi/TwiP/issues) first
+- Provide detailed information about the problem
+- Include error messages and stack traces
+- Describe the expected vs actual behavior
+- Mention your environment (OS, Python version, etc.)
+
+## Communication
+
+### Project Maintainer
+
+**Anirudh Tulasi**
+- Twitter: [@AnirudhTulasi](https://twitter.com/AnirudhTulasi)
+- Email: [anirudhtulasi.x@gmail.com](mailto:anirudhtulasi.x@gmail.com)
+- GitHub: [github.com/anirudhtulasi](https://github.com/anirudhtulasi)
+
+### Getting Help
+
+- Open a [discussion](https://github.com/anirudhtulasi/TwiP/discussions) for questions
+- Join conversations in pull requests and issues
+- Be respectful and constructive in all interactions
+
+## License
+
+By contributing to TwiP, you agree that your contributions will be licensed under the MIT License.
+
+## Recognition
+
+All contributors will be recognized in the project's README and release notes. Your contributions help make this project better for everyone!
+
+---
+
+## Quick Links
+
+- [View Demo](https://anirudhxtwitter.herokuapp.com/)
+- [Report Bug](https://github.com/anirudhtulasi/TwiP/issues)
+- [Request Feature](https://github.com/anirudhtulasi/TwiP/issues)
+- [Project Repository](https://github.com/anirudhtulasi/TwiP)

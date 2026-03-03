@@ -1,0 +1,208 @@
+---
+title: 'Data Processing Functions'
+description: 'NLP functions for tweet preprocessing and tokenization'
+---
+
+## preproc()
+
+Comprehensive text preprocessing function that cleans and normalizes tweet text using multiple NLP techniques.
+
+<ParamField path="s" type="string" required>
+  Raw tweet text to preprocess
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Preprocessed tweet text with:
+  - Normalized Unicode characters
+  - Tokenized words
+  - Stopwords removed
+  - Stemmed words
+  - Punctuation removed
+  - Digits removed
+  - URLs removed
+  - Duplicates removed
+</ResponseField>
+
+### Processing Pipeline
+
+1. **Unicode Normalization**: Converts special characters using `unidecode()`
+2. **Tokenization**: Splits text using `preprocess()` function
+3. **Stopword Removal**: Filters out common English stopwords
+4. **Stemming**: Applies Snowball stemmer to reduce words to root form
+5. **Punctuation Removal**: Strips all punctuation marks
+6. **Digit Removal**: Removes numeric values
+7. **URL Filtering**: Excludes any tokens containing 'http'
+8. **Deduplication**: Keeps only unique tokens
+
+### Usage Example
+
+```python
+from predict import preproc
+
+# Raw tweet
+tweet = "I'm loving this amazing day! 🌟 Check out https://example.com #happy"
+
+# Preprocess
+clean_tweet = preproc(tweet)
+print(clean_tweet)
+# Output: "love amaz day check happi"
+```
+
+### Technical Details
+
+- Stemmer: SnowballStemmer (English, ignores stopwords)
+- Stopwords: NLTK English stopword corpus
+- Preserves emoticons through custom tokenization
+- Returns space-separated string of unique tokens
+
+### Source Location
+
+Defined in `predict.py:79`
+
+---
+
+## tokenize()
+
+Tokenizes text into individual components including words, mentions, hashtags, URLs, and emoticons.
+
+<ParamField path="s" type="string" required>
+  Text string to tokenize
+</ParamField>
+
+<ResponseField name="return" type="list">
+  List of tokens extracted from the input text
+</ResponseField>
+
+### Token Types Recognized
+
+- **Emoticons**: `:)`, `:(`, `:D`, `=]`, etc.
+- **HTML Tags**: `<tag>content</tag>`
+- **Mentions**: `@username`
+- **Hashtags**: `#topic`
+- **URLs**: `http://` and `https://` links
+- **Numbers**: Integers and decimals
+- **Words**: Alphanumeric sequences with hyphens and apostrophes
+- **Other**: Any remaining characters
+
+### Usage Example
+
+```python
+from predict import tokenize
+
+# Tweet text
+text = "@user Check out this link: https://example.com #NLP :)"
+
+# Tokenize
+tokens = tokenize(text)
+print(tokens)
+# Output: ['@user', 'Check', 'out', 'this', 'link', ':', 'https://example.com', '#NLP', ':)']
+```
+
+### Regex Pattern Details
+
+```python
+regex_str = [
+    emoticons_str,                    # Emoticons
+    r'<[^>]+>',                       # HTML tags
+    r'(?:@[\w_]+)',                   # @-mentions
+    r"(?:\#+[\w_]+[\w\'_\-]*[\w_]+)", # hash-tags
+    r'http[s]?://...',                # URLs
+    r'(?:(?:\d+,?)+(?:\.?\d+)?)',    # numbers
+    r"(?:[a-z][a-z'\-_]+[a-z])",     # words with - and '
+    r'(?:[\w_]+)',                    # other words
+    r'(?:\S)'                         # anything else
+]
+```
+
+### Source Location
+
+Defined in `predict.py:67`
+
+---
+
+## preprocess()
+
+Tokenizes text and optionally converts to lowercase while preserving emoticons.
+
+<ParamField path="s" type="string" required>
+  Text string to preprocess
+</ParamField>
+
+<ParamField path="lowercase" type="boolean" default={false}>
+  Whether to convert tokens to lowercase (emoticons are always preserved)
+</ParamField>
+
+<ResponseField name="return" type="list">
+  List of tokens, optionally lowercased
+</ResponseField>
+
+### Behavior
+
+- Calls `tokenize()` to split text into tokens
+- If `lowercase=True`, converts all non-emoticon tokens to lowercase
+- Emoticons are never lowercased (preserves their meaning)
+
+### Usage Example
+
+```python
+from predict import preprocess
+
+# Without lowercase
+tokens = preprocess("Hello @World! :)")
+print(tokens)
+# Output: ['Hello', '@World', '!', ':)']
+
+# With lowercase
+tokens_lower = preprocess("Hello @World! :)", lowercase=True)
+print(tokens_lower)
+# Output: ['hello', '@world', '!', ':)']
+```
+
+### Use Cases
+
+- Text normalization for machine learning models
+- Preserving sentiment indicators (emoticons)
+- Case-insensitive text analysis
+- Feature extraction for classification
+
+### Source Location
+
+Defined in `predict.py:71`
+
+---
+
+## Processing Flow
+
+Here's how these functions work together in the classification pipeline:
+
+```python
+# 1. Fetch tweets
+getTweets("username")  # Saves to user.csv
+
+# 2. Each tweet is processed:
+raw_tweet = "I love #Python! 🐍 https://python.org"
+
+# 3. Through preproc() which calls:
+processed = preproc(raw_tweet)
+# - preprocess() → tokenizes and normalizes
+# - Removes stopwords
+# - Applies stemming
+# - Filters URLs, digits, punctuation
+
+print(processed)  # "love python"
+
+# 4. Processed tweets are vectorized and classified
+```
+
+### Dependencies
+
+- **NLTK**: Stopwords corpus, tokenization, stemming
+- **Unidecode**: Unicode normalization
+- **Regex**: Pattern matching for tokenization
+- **SnowballStemmer**: Word stemming algorithm
+
+### Performance Notes
+
+- `preproc()` is called for every tweet (potentially thousands per user)
+- Stopwords and stemmer are initialized once and reused
+- Duplicate removal happens at the end to preserve token order
