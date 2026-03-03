@@ -1,0 +1,88 @@
+{
+  "projectType": "saas",
+  "projectName": "TwiP",
+  "projectDescription": "Twitter personality analysis tool that uses machine learning to predict Myers-Briggs personality types from user tweets.",
+  "theme": "palm",
+  "primaryColor": "#1DA1F2",
+  "lightColor": "#50B7F5",
+  "darkColor": "#1A8CD8",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "demo"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/twitter-integration",
+              "features/personality-analysis",
+              "features/mbti-classification"
+            ]
+          },
+          {
+            "group": "Understanding Results",
+            "pages": [
+              "results/myers-briggs-types",
+              "results/personality-profiles"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/local-setup",
+              "deployment/heroku"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Technical Reference",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "technical/overview",
+              "technical/nlp-pipeline",
+              "technical/ml-models"
+            ]
+          },
+          {
+            "group": "API",
+            "pages": [
+              "api/core-functions",
+              "api/data-processing"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Twitter data mining via REST API",
+    "NLP text preprocessing with n-grams and word vectors",
+    "Myers-Briggs personality classification (16 types)",
+    "Naive Bayes machine learning models",
+    "Web interface for personality analysis"
+  ],
+  "publicApiSurface": [
+    "classify_user(username) - Main function for personality classification",
+    "POST / - Web endpoint for username submission",
+    "getTweets(user) - Fetches tweets from Twitter API",
+    "preproc(s) - NLP preprocessing pipeline",
+    "tokenize(s) - Text tokenization function"
+  ]
+}
